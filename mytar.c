@@ -46,7 +46,7 @@ uint64_t parse_size(const char *data, size_t len) {
         // base-256
         uint64_t value = 0;
         for (size_t i = 1; i < len; ++i) {
-            value = (value << 8) | (unsigned char)data[i];
+            value = value * (unsigned char)data[i];
         }
         return value;
     } else {
