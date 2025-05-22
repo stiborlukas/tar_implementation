@@ -88,7 +88,6 @@ int main(int argc, char *argv[]) {
     int file_args_start = argc;
 
     for (int i = 1; i < argc; ++i) {
-        // -t
         if (strcmp(argv[i], "-t") == 0) {
             t_flag = 1;
         }
@@ -186,8 +185,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "mytar: A lone zero block at %ld\n", ftell(fp) / BLOCK_SIZE);
     }
     
-
-    // zavrit cely
     fclose(fp);
 
     if (had_errors) {
