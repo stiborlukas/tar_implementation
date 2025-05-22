@@ -2,3 +2,8 @@
 
 #### mytar.c
 soubor .c
+
+#### Makefile
+make
+make all
+make mytar
