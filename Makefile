@@ -7,7 +7,7 @@ DEST = /testovani/$(TARGET)
 .PHONY: all clean
 
 all: $(TARGET)
-	# Zkopíruj do cílové složky
+	@# Zkopíruj do cílové složky
 	cp $(TARGET) testovani/
 
 $(TARGET): $(SRC)
