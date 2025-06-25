@@ -127,8 +127,12 @@ int main(int argc, char *argv[]) {
     }
 
     // kontrola zda jsou tam potrebne veci
-    if (!t_flag || !archive_name) {
-        fprintf(stderr, "mytar: need -t and -f options\n");
+    if (!archive_name) {
+        fprintf(stderr, "mytar: you must specify a file with -f\n");
+        return 2;
+    }
+    if ((t_flag && x_flag) || (!t_flag && !x_flag)) {
+        fprintf(stderr, "mytar: you may not specify both -t and -x\n"); 
         return 2;
     }
 
