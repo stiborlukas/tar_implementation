@@ -75,6 +75,16 @@ void mark_found(const char *name, char **wanted, int wanted_count, int *found) {
             found[i] = 1;
 }
 
+// kontrola zda je soubor tar archivem
+int is_tar_archive(const struct posix_header *hdr) {
+    if ((strncmp(hdr->magic, "ustar", 5) == 0 && hdr->magic[5] == '\0' &&
+         strncmp(hdr->version, "00", 2) == 0) ||
+        (strncmp(hdr->magic, "ustar ", 6) == 0 && strncmp(hdr->version, " ", 1) == 0)) {
+        return 1;
+    }
+    return 0;
+}
+
 // main :)
 int main(int argc, char *argv[]) {
     // mam alespon jeden arg
