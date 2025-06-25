@@ -94,14 +94,22 @@ int main(int argc, char *argv[]) {
     }
 
     int t_flag = 0;
+    int x_flag = 0;
+    int v_flag = 0;
+
     const char *archive_name = NULL;
     int file_args_start = argc;
 
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-t") == 0) {
-            t_flag = 1;
+        	t_flag = 1;
         }
-        // -f 
+        else if (strcmp(argv[i], "-x") == 0) {
+    		x_flag = 1;
+        } 
+        else if (strcmp(argv[i], "-v") == 0) { 
+            v_flag = 1;
+        } 
         else if (strcmp(argv[i], "-f") == 0) {
             // -f musi mit arg
             if (++i >= argc) {
