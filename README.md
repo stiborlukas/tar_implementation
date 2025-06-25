@@ -7,3 +7,7 @@ soubor .c
 make \
 make all \
 make mytar
+
+#### testovani
+moje testovani pro fazi 1
+Makefile taky prizpusoben fazi 1
