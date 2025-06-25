@@ -144,6 +144,8 @@ int main(int argc, char *argv[]) {
     FILE *fp = fopen(archive_name, "rb");
     if (!fp) {
         fprintf(stderr, "mytar: Cannot open %s: %s\n", archive_name, strerror(errno));
+
+        free(found);
         return 2;
     }
 
