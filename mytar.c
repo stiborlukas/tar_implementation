@@ -45,8 +45,8 @@ uint64_t parse_size(const char *data, size_t len) {
     if ((unsigned char)data[0] & 0x80) {
         // base-256
         uint64_t value = 0;
-        for (size_t i = 1; i < len; ++i) {
-            value = value * 256 + (unsigned char)data[i];
+        for (size_t i = 0; i < len; ++i) {
+            value = (value << 8) | (unsigned char)data[i];
         }
         return value;
     } else {
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
 
     int t_flag = 0;
     int x_flag = 0;
-    int v_flag = 0;
+    // int v_flag = 0;
 
     const char *archive_name = NULL;
     int file_args_start = argc;
@@ -107,9 +107,9 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[i], "-x") == 0) {
     		x_flag = 1;
         } 
-        else if (strcmp(argv[i], "-v") == 0) { 
-            v_flag = 1;
-        } 
+        // else if (strcmp(argv[i], "-v") == 0) { 
+        //     v_flag = 1;
+        // } 
         else if (strcmp(argv[i], "-f") == 0) {
             // -f musi mit arg
             if (++i >= argc) {
@@ -152,9 +152,51 @@ int main(int argc, char *argv[]) {
     char block[BLOCK_SIZE];
     int zero_blocks = 0;
 
+
+    // ------------------------------------------------
+
+    long current_archive_offset = 0; 
+    
+    if (fread(block, 1, BLOCK_SIZE, fp) != BLOCK_SIZE) {
+        
+        if (ferror(fp)) {
+            fprintf(stderr, "mytar: Error reading archive %s: %s\n", archive_name, strerror(errno));
+        } else {
+            fprintf(stderr, "mytar: Unexpected EOF in archive\n");
+        }
+        fprintf(stderr, "mytar: Error is not recoverable: exiting now\n");
+        fclose(fp);
+        free(found);
+        return 2;
+    }
+    current_archive_offset += BLOCK_SIZE;
+
+    
+    if (!is_zero_block(block) && !is_tar_archive((struct posix_header *)block)) {
+        fprintf(stderr, "mytar: This does not look like a tar archive\n");
+        had_errors = 1; 
+        
+        // fprintf(stderr, "mytar: Exiting with failure status due to previous errors\n");
+        fclose(fp);
+        free(found);
+        return 2; 
+    }
+
+    
+    fseek(fp, 0, SEEK_SET);
+    current_archive_offset = 0;
+
+
+
+    // ------------------------------------------------
+
+
+
     // main loop
     // cte dokonce nebo do dvou po sobe jdoucich nulovych blocich
     while (fread(block, 1, BLOCK_SIZE, fp) == BLOCK_SIZE) {
+
+        current_archive_offset += BLOCK_SIZE;
 
         if (is_zero_block(block)) {
             zero_blocks++;
@@ -172,6 +214,9 @@ int main(int argc, char *argv[]) {
         if (type != REGTYPE && type != AREGTYPE) {
             fprintf(stderr, "mytar: Unsupported header type: %d\n", (int)(unsigned char)type);
             fclose(fp);
+            free(found);
+            // had_errors = 1; // Mark as error
+            // fprintf(stderr, "mytar: Exiting with failure status due to previous errors\n"); // Print this specific error message
             return 2;
         }
 
