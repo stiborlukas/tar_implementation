@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
 
     int t_flag = 0;
     int x_flag = 0;
-    // int v_flag = 0;
+    int v_flag = 0;
 
     const char *archive_name = NULL;
     int file_args_start = argc;
@@ -107,9 +107,9 @@ int main(int argc, char *argv[]) {
         else if (strcmp(argv[i], "-x") == 0) {
     		x_flag = 1;
         } 
-        // else if (strcmp(argv[i], "-v") == 0) { 
-        //     v_flag = 1;
-        // } 
+        else if (strcmp(argv[i], "-v") == 0) { 
+            v_flag = 1;
+        } 
         else if (strcmp(argv[i], "-f") == 0) {
             // -f musi mit arg
             if (++i >= argc) {
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
     }
 
     int wanted_count = argc - file_args_start;
-    char **wanted_files = (file_args_start < argc) ? &argv[file_args_start] : NULL;
+    char **wanted_files = (wanted_count > 0) ? &argv[file_args_start] : NULL;
     int *found = (wanted_count > 0) ? calloc(wanted_count, sizeof(int)) : NULL;
 
     // otevrit cely ke cteni
@@ -176,7 +176,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "mytar: This does not look like a tar archive\n");
         had_errors = 1; 
         
-        // fprintf(stderr, "mytar: Exiting with failure status due to previous errors\n");
+        fprintf(stderr, "mytar: Exiting with failure status due to previous errors\n");
         fclose(fp);
         free(found);
         return 2; 
@@ -212,31 +212,96 @@ int main(int argc, char *argv[]) {
         char type = hdr->typeflag;
 
         if (type != REGTYPE && type != AREGTYPE) {
-            fprintf(stderr, "mytar: Unsupported header type: %d\n", (int)(unsigned char)type);
+            fprintf(stderr, "mytar: Unsupported header type: %d\n", (int)type);
             fclose(fp);
             free(found);
-            // had_errors = 1; // Mark as error
-            // fprintf(stderr, "mytar: Exiting with failure status due to previous errors\n"); // Print this specific error message
+
             return 2;
         }
 
-        if (should_list(hdr->name, wanted_files, wanted_count)) {
+        // ------------------------------------------------
+
+        int process_this_file = should_list(hdr->name, wanted_files, wanted_count);
+
+        if (t_flag && process_this_file) {
             printf("%s\n", hdr->name);
             fflush(stdout);
             mark_found(hdr->name, wanted_files, wanted_count, found);
-        }
 
-        // preskoci datove bloky souboru
-        uint64_t blocks_to_skip = (size + BLOCK_SIZE - 1) / BLOCK_SIZE;
-        for (uint64_t i = 0; i < blocks_to_skip; ++i) {
-            if (fread(block, 1, BLOCK_SIZE, fp) != BLOCK_SIZE) {
-                fprintf(stderr, "mytar: Unexpected EOF in archive\n");
-                fprintf(stderr, "mytar: Error is not recoverable: exiting now\n");
+            // preskoci datove bloky souboru
+            uint64_t blocks_to_skip = (size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+            for (uint64_t i = 0; i < blocks_to_skip; ++i) {
+                if (fread(block, 1, BLOCK_SIZE, fp) != BLOCK_SIZE) {
+                    fprintf(stderr, "mytar: Unexpected EOF in archive\n");
+                    fprintf(stderr, "mytar: Error is not recoverable: exiting now\n");
 
-                fclose(fp);
-                return 2;
+                    fclose(fp);
+                    return 2;
+                }
+            }
+        
+        } else if (x_flag && process_this_file) {
+            if (v_flag) {
+                printf("%s\n", hdr->name);
+                fflush(stdout);
+            }
+            mark_found(hdr->name, wanted_files, wanted_count, found);
+
+            FILE *out_fp = fopen(hdr->name, "wb");
+            if (!out_fp) {
+                fprintf(stderr, "mytar: Cannot create %s: %s\n", hdr->name, strerror(errno));
+                had_errors = 1;
+            }
+
+            uint64_t blocks_to_read = (size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+            for (uint64_t i = 0; i < blocks_to_read; ++i) {
+                if (fread(block, 1, BLOCK_SIZE, fp) != BLOCK_SIZE) {
+                    fprintf(stderr, "mytar: Unexpected EOF in archive\n");
+                    fprintf(stderr, "mytar: Error is not recoverable: exiting now\n");
+                    had_errors = 1;
+                    if (out_fp) 
+                        fclose(out_fp);
+                    fclose(fp);
+                    free(found);
+                    return 2;
+                }
+                current_archive_offset += BLOCK_SIZE;
+
+                if (out_fp) {
+                    size_t bytes_to_write = BLOCK_SIZE;
+                    if (i == blocks_to_read - 1) {
+                        bytes_to_write = size % BLOCK_SIZE;
+                        if (bytes_to_write == 0 && size > 0) {
+                            bytes_to_write = BLOCK_SIZE;
+                        } else if (size == 0) {
+                            bytes_to_write = 0;
+                        }
+                    }
+
+                    if (bytes_to_write > 0 && fwrite(block, 1, bytes_to_write, out_fp) != bytes_to_write) {
+                        fprintf(stderr, "mytar: Error writing to file %s: %s\n", hdr->name, strerror(errno));
+                        had_errors = 1;
+                    }
+                }
+            }
+            if (out_fp) fclose(out_fp);
+        } else {
+            uint64_t blocks_to_skip = (size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+            for (uint64_t i = 0; i < blocks_to_skip; ++i) {
+                if (fread(block, 1, BLOCK_SIZE, fp) != BLOCK_SIZE) {
+                    fprintf(stderr, "mytar: Unexpected EOF in archive\n");
+                    fprintf(stderr, "mytar: Error is not recoverable: exiting now\n");
+                    had_errors = 1;
+                    fclose(fp);
+                    free(found);
+                    return 2;
+                }
+                current_archive_offset += BLOCK_SIZE;
             }
         }
+    
+
+        // ------------------------------------------------
     }
 
     // jestli nenasel nejaky hledany
@@ -261,5 +326,5 @@ int main(int argc, char *argv[]) {
         return 2;
     }
 
-    return 0;
+    return 0; // jupi :)
 }
