@@ -5,6 +5,6 @@ soubor .c
 
 #### Makefile
 make \
-make all \
+make scp \
 make mytar
 
