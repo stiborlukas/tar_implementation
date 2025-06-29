@@ -151,19 +151,18 @@ int main(int argc, char *argv[]) {
 
     char block[BLOCK_SIZE];
     int zero_blocks = 0;
-
-
-    // ------------------------------------------------
-
     long current_archive_offset = 0; 
     
+    // precteni prvniho bloku pro kontrolu magic
     if (fread(block, 1, BLOCK_SIZE, fp) != BLOCK_SIZE) {
         
+        // pokud ani prvni blok prazdny nebo poskozeny
         if (ferror(fp)) {
             fprintf(stderr, "mytar: Error reading archive %s: %s\n", archive_name, strerror(errno));
         } else {
             fprintf(stderr, "mytar: Unexpected EOF in archive\n");
         }
+
         fprintf(stderr, "mytar: Error is not recoverable: exiting now\n");
         fclose(fp);
         free(found);
@@ -171,7 +170,7 @@ int main(int argc, char *argv[]) {
     }
     current_archive_offset += BLOCK_SIZE;
 
-    
+    // pokud to neni ciste nulovy blok
     if (!is_zero_block(block) && !is_tar_archive((struct posix_header *)block)) {
         fprintf(stderr, "mytar: This does not look like a tar archive\n");
         had_errors = 1; 
@@ -179,18 +178,13 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "mytar: Exiting with failure status due to previous errors\n");
         fclose(fp);
         free(found);
+
         return 2; 
     }
 
-    
+    // na zacatek souboru, cteni v hlavnim cyklu
     fseek(fp, 0, SEEK_SET);
     current_archive_offset = 0;
-
-
-
-    // ------------------------------------------------
-
-
 
     // main loop
     // cte dokonce nebo do dvou po sobe jdoucich nulovych blocich
@@ -219,8 +213,6 @@ int main(int argc, char *argv[]) {
             return 2;
         }
 
-        // ------------------------------------------------
-
         int process_this_file = should_list(hdr->name, wanted_files, wanted_count);
 
         if (t_flag && process_this_file) {
@@ -240,7 +232,9 @@ int main(int argc, char *argv[]) {
                 }
             }
         
-        } else if (x_flag && process_this_file) {
+        } 
+        else if (x_flag && process_this_file) {
+            // verbose mode
             if (v_flag) {
                 printf("%s\n", hdr->name);
                 fflush(stdout);
@@ -258,11 +252,13 @@ int main(int argc, char *argv[]) {
                 if (fread(block, 1, BLOCK_SIZE, fp) != BLOCK_SIZE) {
                     fprintf(stderr, "mytar: Unexpected EOF in archive\n");
                     fprintf(stderr, "mytar: Error is not recoverable: exiting now\n");
+                    
                     had_errors = 1;
                     if (out_fp) 
                         fclose(out_fp);
                     fclose(fp);
                     free(found);
+
                     return 2;
                 }
                 current_archive_offset += BLOCK_SIZE;
@@ -284,8 +280,11 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
-            if (out_fp) fclose(out_fp);
-        } else {
+            if (out_fp) 
+                fclose(out_fp);
+        } 
+        // neni to ani -t ani -x
+        else {
             uint64_t blocks_to_skip = (size + BLOCK_SIZE - 1) / BLOCK_SIZE;
             for (uint64_t i = 0; i < blocks_to_skip; ++i) {
                 if (fread(block, 1, BLOCK_SIZE, fp) != BLOCK_SIZE) {
@@ -294,14 +293,12 @@ int main(int argc, char *argv[]) {
                     had_errors = 1;
                     fclose(fp);
                     free(found);
+
                     return 2;
                 }
                 current_archive_offset += BLOCK_SIZE;
             }
         }
-    
-
-        // ------------------------------------------------
     }
 
     // jestli nenasel nejaky hledany
