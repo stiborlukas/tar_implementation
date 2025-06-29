@@ -3,13 +3,13 @@ CFLAGS = -std=c99 -Wall -Wextra
 TARGET = mytar
 SRC = mytar.c
 
-.PHONY: all clean
-
-all: $(SRC)
-	scp $(SRC) stiborlu@u-pl0.ms.mff.cuni.cz:
+.PHONY: scp clean
 
 $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) -o $(TARGET) $(SRC)
+
+scp:
+	scp $(SRC) stiborlu@u-pl0.ms.mff.cuni.cz:
 
 clean:
 	rm -f $(TARGET)
