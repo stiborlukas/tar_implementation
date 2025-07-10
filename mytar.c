@@ -37,6 +37,7 @@ int is_zero_block(const char *block) {
     for (int i = 0; i < BLOCK_SIZE; ++i)
         if (block[i] != 0)
             return 0;
+
     return 1;
 }
 
@@ -48,12 +49,14 @@ uint64_t parse_size(const char *data, size_t len) {
         for (size_t i = 0; i < len; ++i) {
             value = (value << 8) | (unsigned char)data[i];
         }
+
         return value;
     } else {
         // oktal
         char tmp[21];
         memcpy(tmp, data, len);
         tmp[len] = '\0';
+
         return strtoull(tmp, NULL, 8);
     }
 }
@@ -61,10 +64,13 @@ uint64_t parse_size(const char *data, size_t len) {
 /// vrací true, pokud soubor name je mezi hledanymi (nebo zadny hledan7 neni)
 int should_list(const char *name, char **wanted, int wanted_count) {
     // kdyz zadny hledany neni vypis vsechno
-    if (wanted_count == 0) return 1;
+    if (wanted_count == 0) 
+        return 1;
+    
     for (int i = 0; i < wanted_count; ++i)
         if (strcmp(name, wanted[i]) == 0)
             return 1;
+            
     return 0;
 }
 
@@ -82,6 +88,7 @@ int is_tar_archive(const struct posix_header *hdr) {
         (strncmp(hdr->magic, "ustar ", 6) == 0 && strncmp(hdr->version, " ", 1) == 0)) {
         return 1;
     }
+
     return 0;
 }
 
@@ -144,7 +151,6 @@ int main(int argc, char *argv[]) {
         found = calloc(wanted_count, sizeof(int));
         if (!found) {
             fprintf(stderr, "mytar: memory allocation fail: %s\n", strerror(errno));
-
             return 2;
         }
     }
@@ -153,8 +159,8 @@ int main(int argc, char *argv[]) {
     FILE *fp = fopen(archive_name, "rb");
     if (!fp) {
         fprintf(stderr, "mytar: Cannot open %s: %s\n", archive_name, strerror(errno));
-
         free(found);
+
         return 2;
     }
 
@@ -175,6 +181,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "mytar: Error is not recoverable: exiting now\n");
         fclose(fp);
         free(found);
+
         return 2;
     }
     current_archive_offset += BLOCK_SIZE;
@@ -235,9 +242,10 @@ int main(int argc, char *argv[]) {
                 if (fread(block, 1, BLOCK_SIZE, fp) != BLOCK_SIZE) {
                     fprintf(stderr, "mytar: Unexpected EOF in archive\n");
                     fprintf(stderr, "mytar: Error is not recoverable: exiting now\n");
-
+                    
                     fclose(fp);
                     free(found);
+
                     return 2;
                 }
             }
@@ -300,6 +308,7 @@ int main(int argc, char *argv[]) {
                 if (fread(block, 1, BLOCK_SIZE, fp) != BLOCK_SIZE) {
                     fprintf(stderr, "mytar: Unexpected EOF in archive\n");
                     fprintf(stderr, "mytar: Error is not recoverable: exiting now\n");
+                    
                     had_errors = 1;
                     fclose(fp);
                     free(found);
