@@ -138,7 +138,16 @@ int main(int argc, char *argv[]) {
 
     int wanted_count = argc - file_args_start;
     char **wanted_files = (wanted_count > 0) ? &argv[file_args_start] : NULL;
-    int *found = (wanted_count > 0) ? calloc(wanted_count, sizeof(int)) : NULL;
+
+    int *found = NULL;
+    if (wanted_count > 0) {
+        found = calloc(wanted_count, sizeof(int));
+        if (!found) {
+            fprintf(stderr, "mytar: memory allocation fail: %s\n", strerror(errno));
+
+            return 2;
+        }
+    }
 
     // otevrit cely ke cteni
     FILE *fp = fopen(archive_name, "rb");
@@ -228,6 +237,7 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "mytar: Error is not recoverable: exiting now\n");
 
                     fclose(fp);
+                    free(found);
                     return 2;
                 }
             }
@@ -309,7 +319,7 @@ int main(int argc, char *argv[]) {
                 had_errors = 1;
             }
         }
-        free(found);
+        // free(found);
     }
 
     if (zero_blocks == 1) {
@@ -323,5 +333,6 @@ int main(int argc, char *argv[]) {
         return 2;
     }
 
+    free(found);
     return 0; // jupi :)
 }
