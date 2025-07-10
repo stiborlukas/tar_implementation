@@ -3,7 +3,7 @@ CFLAGS = -std=c99 -Wall -Wextra
 TARGET = mytar
 SRC = mytar.c
 NAME = stiborlu
-HOST = u-pl0.ms.mff.cuni.cz:
+HOST = u-pl0.ms.mff.cuni.cz
 
 .PHONY: scp clean
 
