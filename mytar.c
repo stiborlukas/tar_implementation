@@ -328,7 +328,7 @@ int main(int argc, char *argv[]) {
                 had_errors = 1;
             }
         }
-        free(found);
+        // free(found);
     }
 
     if (zero_blocks == 1) {
