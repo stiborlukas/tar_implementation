@@ -328,7 +328,7 @@ int main(int argc, char *argv[]) {
                 had_errors = 1;
             }
         }
-        // free(found);
+        free(found);
     }
 
     if (zero_blocks == 1) {
@@ -339,6 +339,8 @@ int main(int argc, char *argv[]) {
 
     if (had_errors) {
         fprintf(stderr, "mytar: Exiting with failure status due to previous errors\n");
+        free(found);
+
         return 2;
     }
 
